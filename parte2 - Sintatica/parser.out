@@ -1,0 +1,171 @@
+Created by PLY version 3.11 (http://www.dabeaz.com/ply)
+
+Unused terminals:
+
+    MULTIPLICACAO
+
+Grammar
+
+Rule 0     S' -> programa
+Rule 1     programa -> lista_declaracoes
+Rule 2     lista_declaracoes -> lista_declaracoes declaracao
+Rule 3     lista_declaracoes -> declaracao
+Rule 4     declaracao -> declaracao_variaveis
+Rule 5     declaracao -> inicializacao_variaveis
+Rule 6     declaracao -> declaracao_funcao
+Rule 7     declaracao_variaveis -> tipo DOIS_PONTOS lista_variaveis
+Rule 8     inicializacao_variaveis -> atribuicao
+Rule 9     lista_variaveis -> lista_variaveis VIRGULA var
+Rule 10    lista_variaveis -> var
+Rule 11    var -> ID
+Rule 12    var -> ID indice
+Rule 13    indice -> indice ABRE_COLCHETE expressao FECHA_COLCHETE
+Rule 14    indice -> ABRE_COLCHETE expressao FECHA_COLCHETE
+Rule 15    tipo -> INTEIRO
+Rule 16    tipo -> FLUTUANTE
+Rule 17    declaracao_funcao -> tipo cabecalho
+Rule 18    declaracao_funcao -> cabecalho
+Rule 19    cabecalho -> ID ABRE_PARENTESES lista_parametros FECHA_PARENTESES corpo FIM
+Rule 20    lista_parametros -> lista_parametros VIRGULA parametro
+Rule 21    lista_parametros -> parametro
+Rule 22    lista_parametros -> vazio
+Rule 23    parametro -> tipo DOIS_PONTOS ID
+Rule 24    parametro -> parametro ABRE_COLCHETE FECHA_COLCHETE
+Rule 25    corpo -> corpo acao
+Rule 26    corpo -> vazio
+Rule 27    acao -> expressao
+Rule 28    acao -> declaracao_variaveis
+Rule 29    acao -> se
+Rule 30    acao -> repita
+Rule 31    acao -> leia
+Rule 32    acao -> escreva
+Rule 33    acao -> retorna
+Rule 34    acao -> error
+Rule 35    se -> SE expressao ENTAO corpo FIM
+Rule 36    se -> SE expressao ENTAO corpo SENAO corpo FIM
+Rule 37    repita -> REPITA corpo ATE expressao
+Rule 38    atribuicao -> var ATRIBUICAO expressao
+Rule 39    leia -> LEIA ABRE_PARENTESES var FECHA_PARENTESES
+Rule 40    escreva -> ESCREVA ABRE_pARENTESES expressao FECHA_pARENTESES
+Rule 41    retorna -> RETORNA ABRE_pARENTESES expressao FECHA_pARENTESES
+Rule 42    expressao -> expressao_logica
+Rule 43    expressao -> atribuicao
+Rule 44    expressao_logica -> expressao_simples
+Rule 45    expressao_logica -> expressao_logica operador_logico expressao_simples
+Rule 46    expressao_simples -> expressao_aditiva
+Rule 47    expressao_simples -> expressao_simples operador_relacional expressao_aditiva
+Rule 48    expressao_aditiva -> expressao_multiplicativa
+Rule 49    expressao_aditiva -> expressao_aditiva operador_soma expressao_multiplicativa
+Rule 50    expressao_multiplicativa -> expressao_unaria
+Rule 51    expressao_multiplicativa -> expressao_multiplicativa operador_multiplicacao expressao_unaria
+Rule 52    expressao_unaria -> fator
+Rule 53    expressao_unaria -> operador_soma fator
+Rule 54    expressao_unaria -> operador_negacao fator
+Rule 55    operador_relacional -> MENOR
+Rule 56    operador_relacional -> MAIOR
+Rule 57    operador_relacional -> IGUALDADE
+Rule 58    operador_relacional -> DIFERENTE
+Rule 59    operador_relacional -> MENOR_IGUAL
+Rule 60    operador_relacional -> MAIOR_IGUAL
+Rule 61    operador_soma -> SOMA
+Rule 62    operador_soma -> SUBTRACAO
+Rule 63    operador_logico -> E_LOGICO
+Rule 64    operador_logico -> OU_LOGICO
+Rule 65    operador_negacao -> NEGACAO
+Rule 66    operador_multiplicacao -> MULTIpLICACAO
+Rule 67    operador_multiplicacao -> DIVISAO
+Rule 68    fator -> ABRE_pARENTESES expressao FECHA_pARENTESES
+Rule 69    fator -> var
+Rule 70    fator -> chamada_funcao
+Rule 71    fator -> numero
+Rule 72    numero -> NUMERO_INTEIRO
+Rule 73    numero -> NUMERO_FLUTUANTE
+Rule 74    numero -> NOTACAO_CIENTIFICA
+Rule 75    chamada_funcao -> ID ABRE_pARENTESES lista_argumentos FECHA_pARENTESES
+Rule 76    lista_argumentos -> lista_argumentos VIRGULA expressao
+Rule 77    lista_argumentos -> expressao
+Rule 78    lista_argumentos -> vazio
+Rule 79    vazio -> <empty>
+
+Terminals, with rules where they appear
+
+ABRE_COLCHETE        : 13 14 24
+ABRE_PARENTESES      : 19 39
+ATE                  : 37
+ATRIBUICAO           : 38
+DIFERENTE            : 58
+DIVISAO              : 67
+DOIS_PONTOS          : 7 23
+ENTAO                : 35 36
+ESCREVA              : 40
+E_LOGICO             : 63
+FECHA_COLCHETE       : 13 14 24
+FECHA_PARENTESES     : 19 39
+FIM                  : 19 35 36
+FLUTUANTE            : 16
+ID                   : 11 12 19 23 75
+IGUALDADE            : 57
+INTEIRO              : 15
+LEIA                 : 39
+MAIOR                : 56
+MAIOR_IGUAL          : 60
+MENOR                : 55
+MENOR_IGUAL          : 59
+MULTIPLICACAO        : 
+NEGACAO              : 65
+NOTACAO_CIENTIFICA   : 74
+NUMERO_FLUTUANTE     : 73
+NUMERO_INTEIRO       : 72
+OU_LOGICO            : 64
+REPITA               : 37
+RETORNA              : 41
+SE                   : 35 36
+SENAO                : 36
+SOMA                 : 61
+SUBTRACAO            : 62
+VIRGULA              : 9 20 76
+error                : 34
+
+Nonterminals, with rules where they appear
+
+ABRE_pARENTESES      : 40 41 68 75
+FECHA_pARENTESES     : 40 41 68 75
+MULTIpLICACAO        : 66
+acao                 : 25
+atribuicao           : 8 43
+cabecalho            : 17 18
+chamada_funcao       : 70
+corpo                : 19 25 35 36 36 37
+declaracao           : 2 3
+declaracao_funcao    : 6
+declaracao_variaveis : 4 28
+escreva              : 32
+expressao            : 13 14 27 35 36 37 38 40 41 68 76 77
+expressao_aditiva    : 46 47 49
+expressao_logica     : 42 45
+expressao_multiplicativa : 48 49 51
+expressao_simples    : 44 45 47
+expressao_unaria     : 50 51
+fator                : 52 53 54
+indice               : 12 13
+inicializacao_variaveis : 5
+leia                 : 31
+lista_argumentos     : 75 76
+lista_declaracoes    : 1 2
+lista_parametros     : 19 20
+lista_variaveis      : 7 9
+numero               : 71
+operador_logico      : 45
+operador_multiplicacao : 51
+operador_negacao     : 54
+operador_relacional  : 47
+operador_soma        : 49 53
+parametro            : 20 21 24
+programa             : 0
+repita               : 30
+retorna              : 33
+se                   : 29
+tipo                 : 7 17 23
+var                  : 9 10 38 39 69
+vazio                : 22 26 78
+
