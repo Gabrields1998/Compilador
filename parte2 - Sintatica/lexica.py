@@ -42,7 +42,7 @@ tokens = [
     'NUMERO_FLUTUANTE'
 ] + list(reserved.values())
 
-t_ignore = ' \t\n'
+t_ignore = ' \t'
 t_SOMA = r'\+'
 t_SUBTRACAO = r'-'
 t_MULTIPLICACAO = r'\*'
@@ -78,6 +78,11 @@ def t_error(t):
 
 def t_COMMENT(t):
     r'\{((.|\n)*?)\}'
+    t.lexer.lineno += len(t.value.split('\n')) - 1
+
+def t_newline(t):
+    r'\n+'
+    t.lexer.lineno += len(t.value)
 
 # arquivo = open(sys.argv[1])
 lex.lex()

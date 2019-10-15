@@ -14,10 +14,14 @@ inteiro fatorial(inteiro: n)
         retorna(0)
     fim
 fim
+{
 
+
+    
+}
 inteiro principal()
     leia(n)
-    escreva(fatorial(n))
+    n := escreva(fatorial(n))
     retorna(0)
 fim
 
