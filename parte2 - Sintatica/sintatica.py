@@ -37,13 +37,19 @@ def p_declaracao(p):
 def p_declaracao_variaveis(p):
     '''declaracao_variaveis : tipo DOIS_PONTOS lista_variaveis'''
     global id
-    p[0] = Node("< " + str(id) + " >" + " " +str(p[2]), children = [p[1], p[3]])
+    doispontos = Node("< " + str(id) + " > " +p[2])
     id+=1
+    tipo = Node("< " + str(id) + " > " + "tipo", children = [p[1]])
+    id+=1
+    p[0] = Node("< " + str(id) + " >" + "declaracao variaveis", children = [tipo, doispontos, p[3]])
+    id+=1
+
 def p_inicializacao_variaveis(p):
     '''inicializacao_variaveis : atribuicao'''
     global id
     p[0] = Node("< " + str(id) + " >" + " inicializacao_variaveis", children = [p[1]])
     id+=1
+
 def p_lista_variaveis(p):
     '''lista_variaveis : lista_variaveis VIRGULA var 
                         | var'''
@@ -53,12 +59,16 @@ def p_lista_variaveis(p):
     else:
         p[0] = Node("< " + str(id) + " >" + " variavel", children = [p[1]])
     id+=1
+
 def p_var(p):
     '''var : ID
             | ID indice'''
     global id
+    
     if(len(p) == 3):
-        p[0] = Node("< " + str(id) + " >" + " Indice ID", children = [p[2]])
+        ident = Node("< " + str(id) + " > " + p[1])
+        id+=1
+        p[0] = Node("< " + str(id) + " >" + " Indice", children = [ident, p[2]])
     else:
         p[0] = Node("< " + str(id) + " > " + p[1])
     id+=1
@@ -66,11 +76,21 @@ def p_var(p):
 def p_indice(p):
     '''indice : indice ABRE_COLCHETE expressao FECHA_COLCHETE
             | ABRE_COLCHETE expressao FECHA_COLCHETE'''
+
     global id
+    
     if(len(p) == 5):
-        p[0] = Node("< " + str(id) + " >" + " indice" + str(p[2]) + "expressao" + str(p[4]), children = [p[1], p[3]])
+        abreColchete = Node("< " + str(id) + " > " + str(p[2]))
+        id+=1
+        fechaColchete = Node("< " + str(id) + " > " + str(p[4]))
+        id+=1
+        p[0] = Node("< " + str(id) + " > " + "expressao", children = [p[1], abreColchete, p[3], fechaColchete])
     else:
-        p[0] = Node("< " + str(id) + " >" + " " +str(p[1]) + "expressao" + str(p[3]), children = [p[2]])
+        abreColchete = Node("< " + str(id) + " > " + str(p[1]))
+        id+=1
+        fechaColchete = Node("< " + str(id) + " > " + str(p[3]))
+        id+=1
+        p[0] = Node("< " + str(id) + " > " + "expressao", children = [abreColchete, p[2], fechaColchete])
     id+=1
 
 def p_tipo(p):
@@ -93,7 +113,16 @@ def p_declaracao_funcao(p):
 def p_cabecalho(p):
     '''cabecalho : ID ABRE_PARENTESES lista_parametros FECHA_PARENTESES corpo FIM'''
     global id
-    p[0] = Node("< " + str(id) + " >" + " cabecalho", children = [p[3], p[5]])
+    ident = Node("< " + str(id) + " > " + str(p[1]))
+    id+=1
+    abreColchete = Node("< " + str(id) + " > " + str(p[2]))
+    id+=1
+    fechaColchete = Node("< " + str(id) + " > " + str(p[4]))
+    id+=1
+    fim = Node("< " + str(id) + " > " + str(p[6]))
+    id+=1
+
+    p[0] = Node("< " + str(id) + " >" + " cabecalho", children = [ident, abreColchete, p[3], fechaColchete, p[5], fim])
     id+=1
 
 def p_lista_parametros(p):
@@ -111,7 +140,11 @@ def p_parametro(p):
     '''parametro : tipo DOIS_PONTOS ID
                 |  parametro ABRE_COLCHETE FECHA_COLCHETE'''
     global id
-    p[0] = Node("< " + str(id) + " >" + " tipo" + str(p[2]) + str(p[3]), children = [p[1]] )
+    var2 = Node("< " + str(id) + " > " + str(p[2]))
+    id+=1
+    var3 = Node("< " + str(id) + " > " + str(p[3]))
+    id+=1
+    p[0] = Node("< " + str(id) + " >" + " tipo", children = [p[1], var2, var3] )
     id+=1
 
 def p_corpo(p):
@@ -140,36 +173,85 @@ def p_se(p):
     '''se : SE expressao ENTAO corpo FIM
         | SE expressao ENTAO corpo SENAO corpo FIM'''
     global id
+
+    se = Node("< " + str(id) + " > " + str(p[1]))
+    id+=1
+    entao = Node("< " + str(id) + " > " + str(p[3]))
+    id+=1
+
     if(len(p) == 6):
-        p[0] = Node("< " + str(id) + " >" + " se", children =[p[2], p[4]])
+        fim = Node("< " + str(id) + " > " + str(p[5]))
+        id+=1
+        p[0] = Node("< " + str(id) + " >" + " se", children =[se, p[2], entao, p[4], fim])
     else:
-        p[0] = Node("< " + str(id) + " >" + " se", children =[p[2], p[4], p[6]])
+
+        senao = Node("< " + str(id) + " > " + str(p[5]))
+        id+=1
+        fim = Node("< " + str(id) + " > " + str(p[7]))
+        id+=1
+
+        p[0] = Node("< " + str(id) + " >" + " se", children =[se, p[2], entao, p[4], senao, p[6], fim])
     id+=1
 
 def p_repita(p):
     '''repita : REPITA corpo ATE expressao'''
     global id
-    p[0] = Node("< " + str(id) + " >" + " repita", children = [p[2], p[4]])
+
+    repita = Node("< " + str(id) + " > " + str(p[1]))
     id+=1
+    ate = Node("< " + str(id) + " > " + str(p[3]))
+    id+=1
+
+    p[0] = Node("< " + str(id) + " >" + " repita", children = [repita, p[2], ate, p[4]])
+    id+=1
+
 def p_atribuicao(p):
     '''atribuicao : var ATRIBUICAO expressao'''
     global id
-    p[0] = Node("< " + str(id) + " >" + " :=", children = [p[1], p[3]])
+
+    atribuicao = Node("< " + str(id) + " > " + str(p[2]))
     id+=1
+
+    p[0] = Node("< " + str(id) + " >" + " atribuicao", children = [p[1], atribuicao, p[3]])
+    id+=1
+
 def p_leia(p):
     '''leia : LEIA ABRE_PARENTESES var FECHA_PARENTESES'''
     global id
-    p[0] = Node("< " + str(id) + " >" + " leia", children = [p[3]])
+
+    leia = Node("< " + str(id) + " > " + str(p[1]))
     id+=1
+    abreparenteses = Node("< " + str(id) + " > " + str(p[2]))
+    id+=1
+    fechaparenteses = Node("< " + str(id) + " > " + str(p[4]))
+    id+=1
+    p[0] = Node("< " + str(id) + " >" + " leia", children = [leia, abreparenteses, p[3], fechaparenteses])
+    id+=1
+
 def p_escreva(p):
     '''escreva : ESCREVA ABRE_PARENTESES expressao FECHA_PARENTESES'''
     global id
-    p[0] = Node("< " + str(id) + " >" + " escreva", children = [p[3]])
+
+    escreva = Node("< " + str(id) + " > " + str(p[1]))
     id+=1
+    abreparenteses = Node("< " + str(id) + " > " + str(p[2]))
+    id+=1
+    fechaparenteses = Node("< " + str(id) + " > " + str(p[4]))
+    id+=1
+    p[0] = Node("< " + str(id) + " >" + " escreva", children = [escreva, abreparenteses, p[3], fechaparenteses])
+    id+=1
+
 def p_retorna(p):
     '''retorna : RETORNA ABRE_PARENTESES expressao FECHA_PARENTESES'''
     global id
-    p[0] = Node("< " + str(id) + " >" + " retorna", children = [p[3]])
+
+    retorna = Node("< " + str(id) + " > " + str(p[1]))
+    id+=1
+    abreparenteses = Node("< " + str(id) + " > " + str(p[2]))
+    id+=1
+    fechaparenteses = Node("< " + str(id) + " > " + str(p[4]))
+    id+=1
+    p[0] = Node("< " + str(id) + " >" + " retorna", children = [retorna, abreparenteses, p[3], fechaparenteses])
     id+=1
 
 def p_expressao(p):
@@ -256,7 +338,6 @@ def p_operador_logico(p):
     p[0] = Node("< " + str(id) + " > " + str(p[1]))
     id+=1
 
-
 def p_operador_negacao(p):
     '''operador_negacao : NEGACAO'''
     global id
@@ -277,7 +358,11 @@ def p_fator(p):
             | numero'''
     global id
     if(len(p) == 4):
-        p[0] = Node("< " + str(id) + " >" + " fator", children = [p[2]])
+        abreparenteses = Node("< " + str(id) + " > " + str(p[1]))
+        id+=1
+        fechaparenteses = Node("< " + str(id) + " > " + str(p[3]))
+        id+=1
+        p[0] = Node("< " + str(id) + " >" + " fator", children = [abreparenteses, p[2], fechaparenteses])
     else:
         p[0] = Node("< " + str(id) + " >" + " fator", children = [p[1]])
     id+=1
@@ -293,7 +378,14 @@ def p_numero(p):
 def p_chamada_funcao(p):
     '''chamada_funcao : ID ABRE_PARENTESES lista_argumentos FECHA_PARENTESES'''
     global id
-    p[0] = Node("< " + str(id) + " >" + " chamada_funcao", children = [p[3]])
+    
+    ident = Node("< " + str(id) + " > " + str(p[1]))
+    id+=1
+    abreparenteses = Node("< " + str(id) + " > " + str(p[2]))
+    id+=1
+    fechaparenteses = Node("< " + str(id) + " > " + str(p[4]))
+    id+=1
+    p[0] = Node("< " + str(id) + " >" + " chamada_funcao", children = [ident, abreparenteses, p[3], fechaparenteses])
     id+=1
 
 def p_lista_argumentos(p):
