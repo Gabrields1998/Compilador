@@ -404,7 +404,7 @@ def criarTabela(no):
     for children in no.children:
         criarTabela(children)
 
-def confereErro(no):
+def confereErroArvore(no):
     if (no.name == ":=" or no.name == "leia" or no.name == "lista_parametros"):
         varTabela = None
 
@@ -691,7 +691,39 @@ def confereErro(no):
                     vetError.append(error)
                     
     for children in no.children:
-        confereErro(children)
+        confereErroArvore(children)
+
+def confereErroTabela():
+    for tabela in vetTabela:
+        if(tabela.getTipo() == "variavel"):
+            count = 0
+            for tabela2 in  vetTabela:
+                if(tabela.getNome() == tabela2.getNome() and tabela.getEscopo() == tabela2.getEscopo()):
+                    count +=1
+            if(count >= 2):
+                error = {
+                    "erro": True,
+                    "tipo": "Erro:",
+                    "conteudo": "Variável " + tabela.getNome() + " já declarada anteriormente",
+                    "flag": True
+                }
+                vetError.append(error)
+            if(tabela.getInicializada() == False):
+                error = {
+                    "erro": True,
+                    "tipo": "Erro:",
+                    "conteudo": "Variável " + tabela.getNome() + " declarada e não inicializada",
+                    "flag": True
+                }
+                vetError.append(error)
+            if(tabela.getUtilizada() == False):
+                error = {
+                    "erro": True,
+                    "tipo": "Erro:",
+                    "conteudo": "Variável " + tabela.getNome() + " declarada e não utilizada",
+                    "flag": True
+                }
+                vetError.append(error)
 
 def atribuicaoDistinta(no):
     if(no.name == ":="):
@@ -989,49 +1021,19 @@ def verificaArray(no):
     for children in no.children:
         verificaArray(children)
 
-def main():
-    arvore = sintatica.generate(sys.argv[1])
-
+def semantica(arquivoNome):
+    arvore = sintatica.generate(arquivoNome)
     if(arvore):
         arvorePoda(arvore)
         criarTabela(arvore)
-        confereErro(arvore)
-        for tabela in vetTabela:
-            if(tabela.getTipo() == "variavel"):
-                count = 0
-                for tabela2 in  vetTabela:
-                    if(tabela.getNome() == tabela2.getNome() and tabela.getEscopo() == tabela2.getEscopo()):
-                        count +=1
-                if(count >= 2):
-                    error = {
-                        "erro": True,
-                        "tipo": "Erro:",
-                        "conteudo": "Variável " + tabela.getNome() + " já declarada anteriormente",
-                        "flag": True
-                    }
-                    vetError.append(error)
-                if(tabela.getInicializada() == False):
-                    error = {
-                        "erro": True,
-                        "tipo": "Erro:",
-                        "conteudo": "Variável " + tabela.getNome() + " declarada e não inicializada",
-                        "flag": True
-                    }
-                    vetError.append(error)
-                if(tabela.getUtilizada() == False):
-                    error = {
-                        "erro": True,
-                        "tipo": "Erro:",
-                        "conteudo": "Variável " + tabela.getNome() + " declarada e não utilizada",
-                        "flag": True
-                    }
-                    vetError.append(error)
-
+        confereErroArvore(arvore)
+        confereErroTabela()
         atribuicaoDistinta(arvore)      
         juntaFunc(arvore)
         pesquisaFuncao(arvore)
         declaracao_funcao(arvore, arvore)
         verificaArray(arvore)
+
         for tabela in vetTabela:
             print("\n_______________________________________\n")
             print(" tipo: " , tabela.getTipo() 
@@ -1044,10 +1046,5 @@ def main():
             , "\n inicializada: " , tabela.getInicializada() 
             , "\n utilizada: ", tabela.getUtilizada(), "\n" )
 
-        if(len(vetError) != 0):
-            for erro in vetError:
-                print(erro["tipo"], erro["conteudo"])
-
         UniqueDotExporter(arvore).to_picture("programaPoda.png")
-
-main()
+        return[vetTabela, arvore, vetError]

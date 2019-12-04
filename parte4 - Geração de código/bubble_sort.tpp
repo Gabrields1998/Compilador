@@ -1,8 +1,6 @@
 inteiro: vet[10]
 inteiro: tam
 
-tam := 10
-
 { preenche o vetor no pior caso }
 preencheVetor()
   inteiro: i
@@ -38,6 +36,7 @@ fim
 
 { programa principal }
 inteiro principal()
+  tam := 10
   preencheVetor()
   bubble_sort()
   retorna(0)

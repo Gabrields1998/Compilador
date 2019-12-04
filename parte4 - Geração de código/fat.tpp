@@ -1,4 +1,5 @@
 inteiro: n
+flutuante: m
 
 
 inteiro fatorial(inteiro: n)
@@ -16,6 +17,7 @@ inteiro fatorial(inteiro: n)
 fim
 
 inteiro principal()
+    m := 10.1
     leia(n)
     escreva(fatorial(n))
     retorna(0)
