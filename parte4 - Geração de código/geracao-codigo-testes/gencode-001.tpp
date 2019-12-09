@@ -3,7 +3,6 @@ inteiro: a
 
 inteiro principal()
 	inteiro: b
-	flutuante: n
 	
 	a := 11
 

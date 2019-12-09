@@ -50,7 +50,11 @@ iftrue = []
 iffalse = []
 ifend = []
 
-retornoFunc = None
+LacoBegin = []
+LacoEnd = []
+LacoFora = []
+
+retornoFunc = False
 
 def is_number(num):
      
@@ -215,8 +219,14 @@ def getCallConteudo(node):
         parans = []
 
         for parametro in node.children[2].children:
-            parans.append(escopoVec[-1]["builder"].load(getVarConteudo(parametro)["conteudo"], getVarConteudo(parametro)["nome"]))
+            if(getVarConteudo(parametro)):
+                parans.append(escopoVec[-1]["builder"].load(getVarConteudo(parametro)["conteudo"], getVarConteudo(parametro)["nome"]))
+            else:
+                var = escopoVec[-1]["builder"].alloca(getCallConteudo(parametro)["tipo"], name="funcVar")
+                
+                escopoVec[-1]["builder"].store(getCallConteudo(parametro)["conteudo"], var)
 
+                parans.append(escopoVec[-1]["builder"].load(var, getCallConteudo(parametro)["nome"]))
         funcRes = {
             "nome": node.children[0].name,
             "escopo": getEscopo(node),
@@ -343,22 +353,50 @@ def criaBlocoTrue(node):
 def criaBlocoFalse(node):
     iftrue.pop()
     funcNow = escopoVec[-1]
-    if(retornoFunc != None):
-        funcNow["builder"].branch(ifend[-1])
-    else:
-        funcNow["builder"].branch(funcNow["endBasicBlock"])
+    funcNow["builder"].branch(ifend[-1])
     funcNow["builder"].position_at_end(iffalse[-1])
 
 def fechaBlocoIf(node):
     iffalse.pop()
     funcNow = escopoVec[-1]
-    if(retornoFunc != None):
-        funcNow["builder"].branch(ifend[-1])
-    else:
-        funcNow["builder"].branch(funcNow["endBasicBlock"])
+    funcNow["builder"].branch(ifend[-1])
     funcNow["builder"].position_at_end(ifend[-1])
     funcNow["builder"].alloca(ir.IntType(32), name="finsterson")
     ifend.pop()
+
+def criaLaco(node):
+    funcNow = escopoVec[-1]
+    global LacoBegin
+    global LacoEnd
+    global LacoFora
+    LacoBegin.append(funcNow["funcCabecalho"].append_basic_block('LacoBegin'))
+    LacoEnd.append(funcNow["funcCabecalho"].append_basic_block('LacoEnd'))
+    LacoFora.append(funcNow["funcCabecalho"].append_basic_block('LacoFora'))
+
+
+    funcNow["builder"].branch(LacoBegin[-1])
+    funcNow["builder"].position_at_end(LacoBegin[-1])
+
+def fechaLaco(node):
+
+    funcNow = escopoVec[-1]
+    funcNow["builder"].branch(LacoEnd[-1])
+    funcNow["builder"].position_at_end(LacoEnd[-1])
+
+    expressao = pegaExpressao(node, [])
+    operador = expressao[0].name
+
+    if(operador == "="):
+        operador = "=="
+
+    var1 = populaVariavel(expressao[1])
+    var2 = populaVariavel(expressao[2])
+    If = funcNow["builder"].icmp_signed(operador, var1, var2, name='if_test')
+
+    funcNow["builder"].cbranch(If, LacoFora[-1], LacoBegin[-1])
+    funcNow["builder"].position_at_end(LacoFora[-1])
+    funcNow["builder"].alloca(ir.IntType(32), name="finsterson")
+    LacoFora.pop()
 
 def escrevaFunc(variavel):
     parans = []
@@ -416,6 +454,12 @@ def percorreArvore(node):
     
     if(node.name == "seFim"):
         fechaBlocoIf(node)
+
+    if(node.name == "repita"):
+        criaLaco(node)
+
+    if(node.name == "até"):
+        fechaLaco(node.parent.children[2])
 
     if(node.name == ":="):
         utilizaVariavel(node, "atribuicao")

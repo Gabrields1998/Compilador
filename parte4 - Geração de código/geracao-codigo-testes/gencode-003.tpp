@@ -13,6 +13,5 @@ inteiro principal()
 	senão
 		ret := 0
   fim
-
   retorna(0)
 fim
