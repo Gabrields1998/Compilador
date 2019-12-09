@@ -18,6 +18,9 @@ fim
 
 inteiro principal()
     m := 10.1
+    n := 1
+    inteiro: x
+    x := fatorial(n)
     leia(n)
     escreva(fatorial(n))
     retorna(0)

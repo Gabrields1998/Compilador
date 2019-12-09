@@ -5,7 +5,9 @@ inteiro fibonacciRec(inteiro: n)
 	se (n <= 1) então
 		retorna(n)
 	senão
-		retorna(fibonacciRec(n - 1) + fibonacciRec(n - 2))
+		inteiro: retorno
+		retorno := fibonacciRec(n - 1) + fibonacciRec(n - 2)
+		retorna(retorno)
 	fim
 fim
 

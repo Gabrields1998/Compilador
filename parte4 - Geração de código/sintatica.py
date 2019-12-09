@@ -164,14 +164,14 @@ def p_se(p):
     entao = Node(str(p[3]))
 
     if(len(p) == 6):
-        fim = Node(str(p[5]))
+        fim = Node("seFim")
 
         p[0] = Node("se", children =[se, p[2], entao, p[4], fim])
     else:
 
         senao = Node(str(p[5]))
 
-        fim = Node(str(p[7]))
+        fim = Node("seFim")
 
 
         p[0] = Node( "se", children =[se, p[2], entao, p[4], senao, p[6], fim])

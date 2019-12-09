@@ -1,27 +1,57 @@
 from llvmlite import ir
+from llvmlite import binding as llvm
 from semantica import *
 
-vetTabela = []
+llvm.initialize()
+llvm.initialize_all_targets()
+llvm.initialize_native_target()
+llvm.initialize_native_asmprinter()
 
 module = ir.Module('meu_modulo.bc')
 
-funcNow = {
-    "escopo": "global",
-    "funcCabecalho": None,
-    "entryBlock": None,
-    "endBasicBlock": None,
-    "builder": None,
-    "retorno": None
-}
+module.triple = llvm.get_default_triple()
+
+target = llvm.Target.from_triple(module.triple)
+target_machine = target.create_target_machine()
+
+llvm.load_library_permanently('./io.so')
+module.data_layout = target_machine.target_data
+
+escrevaInteiro = ir.Function(module,ir.FunctionType(ir.VoidType(), [ir.IntType(32)]),name="escrevaInteiro")
+escrevaFlutuante = ir.Function(module,ir.FunctionType(ir.VoidType(),[ir.FloatType()]),name="escrevaFlutuante")
+leiaInteiro = ir.Function(module,ir.FunctionType(ir.IntType(32),[]),name="leiaInteiro")
+leiaFlutuante = ir.Function(module,ir.FunctionType(ir.FloatType(),[]),name="leiaFlutuante")
+
+
+vetTabela = []
+# funcNow = {
+#     "nome": None,
+#     "escopo": "global",
+#     "type": None,
+#     "funcCabecalho": None,
+#     "entryBlock": None,
+#     "endBasicBlock": None,
+#     "builder": None,
+#     "retorno": None
+# }
+
+escopoVec = []
 
 # varVec = {
 #     "nome": "",
+#     "tipo": "",
 #     "escopo": "",
 #     "conteudo": {}
 # }
 
 varVec = []
-cd
+
+iftrue = []
+iffalse = []
+ifend = []
+
+retornoFunc = None
+
 def is_number(num):
      
     try:
@@ -45,8 +75,11 @@ def getEscopo(node):
             breaker = False
     return escopo
 
-def criaVariavel(node):
+def criaVariavel(node, flag):
     variables = []
+    funcNow = []
+    if(getEscopo(node) != "global"):
+        funcNow = escopoVec[-1]
     if(node.children[1].name == "lista_variaveis"):
         for children in node.children[1].children:
             variables.append(children)
@@ -54,22 +87,35 @@ def criaVariavel(node):
         variables.append(node.children[1])
 
     for variable in variables:
+        tipo = None
         if(node.children[0].name == "inteiro"):
+            tipo = "inteiro"
             if(getEscopo(variable) == "global"):
                 var = ir.GlobalVariable(module, ir.IntType(32), variable.name)
+                var.initializer =  ir.Constant(ir.IntType(32), 0)
                 var.linkage = "common"
             else:
                 var = funcNow["builder"].alloca(ir.IntType(32), name=variable.name)
         else:
+            tipo = "flutuante"
             if(getEscopo(variable) == "global"):
                 var = ir.GlobalVariable(module, ir.FloatType(), variable.name)
+                var.initializer =  ir.Constant(ir.FloatType(), 0.0)
                 var.linkage = "common"
             else:
                 var = funcNow["builder"].alloca(ir.FloatType(), name=variable.name)
         var.align = 4
 
+        if(flag == "lista_parametros"):
+            i = 0
+            for parametro in node.parent.children:
+                if(parametro.children[1].name == variable.name):
+                    funcNow["builder"].store(funcNow["funcCabecalho"].args[i], var)
+                i+=1
+
         varVec.append({
             "nome": variable.name,
+            "tipo": tipo,
             "escopo": getEscopo(variable),
             "conteudo": var 
         })
@@ -84,16 +130,30 @@ def getParametrosFuncao(nome):
     return tipoParametros
 
 def criaFuncao(node):
+    funcNow = {
+        "nome": node.children[0].name,
+        "parametros": [],
+        "escopo": "global",
+        "type": None,
+        "funcCabecalho": None,
+        "entryBlock": None,
+        "endBasicBlock": None,
+        "builder": None,
+        "retorno": None
+    }
+
     funcTipo = None
     tipoRet = None
     valRet = None
     tupla = getParametrosFuncao(node.children[0].name)
     parans = []
+
     for tipo in tupla:
         if(tipo == "inteiro"):
             parans.append(ir.IntType(32))
         else:
             parans.append(ir.FloatType())
+
     if(node.parent.children[0].name == "inteiro"):
         funcTipo = ir.FunctionType(ir.IntType(32), parans)
         tipoRet = ir.IntType(32)
@@ -103,17 +163,32 @@ def criaFuncao(node):
         tipoRet = ir.FloatType()
         valRet = ir.Constant(ir.FloatType(), 0.0)
 
+    funcNow["type"] = tipoRet
     funcNow["escopo"] = getEscopo(node)
+
     if(node.children[0].name == "principal"):
         funcNow["funcCabecalho"] = ir.Function(module, funcTipo, name="main")
     else:
         funcNow["funcCabecalho"] = ir.Function(module, funcTipo, name=node.children[0].name)
+
     funcNow["entryBlock"] = funcNow["funcCabecalho"].append_basic_block('entry')
-    funcNow["endBasicBlock"] = funcNow["funcCabecalho"].append_basic_block('exit')
     funcNow["builder"] = ir.IRBuilder(funcNow["entryBlock"])
 
-    funcNow["retorno"] = funcNow["builder"].alloca(tipoRet, name='retorno')
-    funcNow["builder"].store(valRet, funcNow["retorno"])
+    funcNow["retorno"] = funcNow["builder"].alloca(funcNow["type"], name='retorno')
+    escopoVec.append(funcNow)
+
+def fechaFuncao():
+    global retornoFunc
+    funcNow =  escopoVec[-1]
+    funcNow["endBasicBlock"] = funcNow["funcCabecalho"].append_basic_block('exit')
+
+    funcNow["builder"].branch(funcNow["endBasicBlock"])
+    funcNow["builder"].position_at_end(funcNow["endBasicBlock"])
+    funcNow["builder"].store(ir.Constant(ir.FloatType(), 0.0), funcNow["builder"].alloca(ir.FloatType(), name='finsterson'))
+
+    # funcNow["retorno"] = funcNow["builder"].alloca(funcNow["type"], name='retorno')
+    # funcNow["builder"].store(retornoFunc, funcNow["retorno"])
+    funcNow["builder"].ret(funcNow["builder"].load(funcNow["retorno"], "retorno"))
 
 def pegaFilhosDireita(node, filhos):
 
@@ -125,14 +200,41 @@ def pegaFilhosDireita(node, filhos):
     return filhos
 
 def getVarConteudo(node):
+
     for var in varVec:
         if((var["nome"] == node.name and var["escopo"] == getEscopo(node)) or (var["nome"] == node.name and var["escopo"] == "global")):
             return var
     return False
 
-def utilizaVariavel(node):
-    varRes = getVarConteudo(node.children[0])
+def getCallConteudo(node):
+    if(node.name == "chamada_funcao"):
+        function = None
+        for func in escopoVec:
+            if(node.children[0].name == func["nome"]):
+                function = func
+        parans = []
+
+        for parametro in node.children[2].children:
+            parans.append(escopoVec[-1]["builder"].load(getVarConteudo(parametro)["conteudo"], getVarConteudo(parametro)["nome"]))
+
+        funcRes = {
+            "nome": node.children[0].name,
+            "escopo": getEscopo(node),
+            "tipo": function["type"],
+            "conteudo": escopoVec[-1]["builder"].call(function["funcCabecalho"], parans)
+        }
+
+        return funcRes
+    return False
+
+def utilizaVariavel(node, flag):
+    funcNow = escopoVec[-1]
+    if(flag == "atribuicao"):
+        varRes = getVarConteudo(node.children[0])
     filhos = pegaFilhosDireita(node.children[1], [])
+
+    funcNow = escopoVec[-1]
+    global retornoFunc
 
     num1 = None
     num2 = None
@@ -145,7 +247,10 @@ def utilizaVariavel(node):
             else:
                 num1 = ir.Constant(ir.FloatType(), float(filhos[1].name))
         else:
-            num1 = funcNow["builder"].load(getVarConteudo(filhos[1])["conteudo"], getVarConteudo(filhos[1])["nome"])
+            if(filhos[1].name == "chamada_funcao"):
+                num1 = getCallConteudo(filhos[1])["conteudo"]
+            else:
+                num1 = funcNow["builder"].load(getVarConteudo(filhos[1])["conteudo"], getVarConteudo(filhos[1])["nome"])
         
         if(is_number(filhos[2].name)):
             if(filhos[2].name.isdigit()):
@@ -153,7 +258,10 @@ def utilizaVariavel(node):
             else:
                 num2 = ir.Constant(ir.FloatType(), float(filhos[2].name))
         else:
-            num2 = funcNow["builder"].load(getVarConteudo(filhos[2])["conteudo"], getVarConteudo(filhos[2])["nome"])
+            if(filhos[2].name == "chamada_funcao"):
+                num2 = getCallConteudo(filhos[2])["conteudo"]
+            else:
+                num2 = funcNow["builder"].load(getVarConteudo(filhos[2])["conteudo"], getVarConteudo(filhos[2])["nome"])
 
         if(filhos[0].name == "+"):
             temp = funcNow["builder"].add(num1, num2, name='soma')
@@ -164,16 +272,34 @@ def utilizaVariavel(node):
         elif(filhos[0].name == "/"):
             temp = funcNow["builder"].mul(num1, num2, name='divisao')
 
-        funcNow["builder"].store(temp, varRes["conteudo"])
+        if(flag == "atribuicao"):
+            funcNow["builder"].store(temp, varRes["conteudo"])
+        elif(flag == "retorno"):
+            retornoFunc = temp
+            funcNow["builder"].store(retornoFunc, funcNow["retorno"])
+
     elif(is_number(filhos[0].name)):
         if(filhos[0].name.isdigit()):
             num1 = ir.Constant(ir.IntType(32), int(filhos[0].name))
         else:
             num1 = ir.Constant(ir.FloatType(), float(filhos[0].name))
-        funcNow["builder"].store(num1, varRes["conteudo"])
+        
+        if(flag == "atribuicao"):
+            funcNow["builder"].store(num1, varRes["conteudo"])
+        elif(flag == "retorno"):
+            retornoFunc = num1
+            funcNow["builder"].store(retornoFunc, funcNow["retorno"])
     else:
-        num1 = funcNow["builder"].load(getVarConteudo(filhos[0])["conteudo"], getVarConteudo(filhos[0])["nome"])
-        funcNow["builder"].store(num1, varRes["conteudo"])
+        if(filhos[0].name == "chamada_funcao"):
+            num1 = getCallConteudo(filhos[0])["conteudo"]
+        else:
+            num1 = funcNow["builder"].load(getVarConteudo(filhos[0])["conteudo"], getVarConteudo(filhos[0])["nome"])
+
+        if(flag == "atribuicao"):
+            funcNow["builder"].store(num1, varRes["conteudo"])
+        elif(flag == "retorno"):
+            retornoFunc = num1
+            funcNow["builder"].store(retornoFunc, funcNow["retorno"])
 
 def pegaExpressao(node, expressao):
     
@@ -185,6 +311,7 @@ def pegaExpressao(node, expressao):
     return expressao
 
 def populaVariavel(number):
+    funcNow = escopoVec[-1]
     if(is_number(number.name)):
         if(number.name.isdigit()):
             return ir.Constant(ir.IntType(32), int(number.name))
@@ -193,10 +320,14 @@ def populaVariavel(number):
     else:
         return funcNow["builder"].load(getVarConteudo(number)["conteudo"], getVarConteudo(number)["nome"])
 
-def criaBlocoDeDecisao(node):
-    # iftrue = funcNow["funcCabecalho"].append_basic_block('iftrue')
-    # iffalse = funcNow["funcCabecalho"].append_basic_block('iffalse')
-    # ifend = funcNow["funcCabecalho"].append_basic_block('ifend')
+def criaBlocoTrue(node):
+    funcNow = escopoVec[-1]
+    global iftrue
+    global iffalse
+    global ifend
+    iftrue.append(funcNow["funcCabecalho"].append_basic_block('iftrue'))
+    iffalse.append(funcNow["funcCabecalho"].append_basic_block('iffalse'))
+    ifend.append(funcNow["funcCabecalho"].append_basic_block('ifend'))
 
     expressao = pegaExpressao(node.children[0], [])
     
@@ -205,29 +336,98 @@ def criaBlocoDeDecisao(node):
     var2 = populaVariavel(expressao[2])
     
     If = funcNow["builder"].icmp_signed(operador, var1, var2, name='if_test')
-    # funcNow["builder"].cbranch(If, iftrue, iffalse)
 
-    # funcNow["builder"].position_at_end(iftrue)
-    # funcNow["builder"].branch(ifend)
+    funcNow["builder"].cbranch(If, iftrue[-1], iffalse[-1])
+    funcNow["builder"].position_at_end(iftrue[-1])
 
-    # funcNow["builder"].position_at_end(iffalse)
-    # funcNow["builder"].branch(ifend)
+def criaBlocoFalse(node):
+    iftrue.pop()
+    funcNow = escopoVec[-1]
+    if(retornoFunc != None):
+        funcNow["builder"].branch(ifend[-1])
+    else:
+        funcNow["builder"].branch(funcNow["endBasicBlock"])
+    funcNow["builder"].position_at_end(iffalse[-1])
 
-    # funcNow["builder"].position_at_end(ifend)
+def fechaBlocoIf(node):
+    iffalse.pop()
+    funcNow = escopoVec[-1]
+    if(retornoFunc != None):
+        funcNow["builder"].branch(ifend[-1])
+    else:
+        funcNow["builder"].branch(funcNow["endBasicBlock"])
+    funcNow["builder"].position_at_end(ifend[-1])
+    funcNow["builder"].alloca(ir.IntType(32), name="finsterson")
+    ifend.pop()
+
+def escrevaFunc(variavel):
+    parans = []
+    if(variavel.name == "chamada_funcao"):
+        var = getCallConteudo(variavel)
+    else:
+        var = getVarConteudo(variavel)
+
+    if(var):
+        parans.append(escopoVec[-1]["builder"].load(var["conteudo"], var["nome"]))
+
+        if(var["tipo"] == "inteiro" or var["tipo"] == ir.IntType(32)):
+            escopoVec[-1]["builder"].call(escrevaInteiro, parans)
+        else:
+            escopoVec[-1]["builder"].call(escrevaFlutuante, parans)
+    else:
+        if(is_number(variavel.name)):
+            if(variavel.name.isdigit()):
+                escopoVec[-1]["builder"].call(escrevaInteiro, [ir.Constant(ir.IntType(32), int(variavel.name))])
+            else:
+                escopoVec[-1]["builder"].call(escrevaFlutuante, [ir.Constant(ir.FloatType(), float(variavel.name))])
+
+def leiaFunc(variavel):
+    parans = []
+    if(variavel.name == "chamada_funcao"):
+        var = getCallConteudo(variavel)
+    else:
+        var = getVarConteudo(variavel)
+
+    if(var):
+        if(var["tipo"] == "inteiro" or var["tipo"] == ir.IntType(32)):
+            escopoVec[-1]["builder"].store(escopoVec[-1]["builder"].call(leiaInteiro, parans), var["conteudo"])
+        else:
+            escopoVec[-1]["builder"].store(escopoVec[-1]["builder"].call(leiaFlutuante, parans), var["conteudo"])
 
 def percorreArvore(node):
 
     if(node.name == ":"):
-        criaVariavel(node)
+        if(node.parent.name != "lista_parametros"):
+            criaVariavel(node, "")
+        else:
+            criaVariavel(node, "lista_parametros")
 
     if(node.name == "cabecalho"):
         criaFuncao(node)
 
+    if(node.name == "fim"):
+        fechaFuncao()
+
     if(node.name == "se"):
-        criaBlocoDeDecisao(node)
+        criaBlocoTrue(node)
+    
+    if(node.name == "senão"):
+        criaBlocoFalse(node)
+    
+    if(node.name == "seFim"):
+        fechaBlocoIf(node)
 
     if(node.name == ":="):
-        utilizaVariavel(node)
+        utilizaVariavel(node, "atribuicao")
+    
+    if(node.name == "escreva"):
+        escrevaFunc(node.children[1])
+    
+    if(node.name == "leia"):
+        leiaFunc(node.children[1])
+
+    if(node.name == "retorna"):
+        utilizaVariavel(node, "retorno")
 
     for children in node.children:
         percorreArvore(children)
@@ -247,6 +447,8 @@ def geraLLVM(arvore):
     arquivo.write(str(module))
     arquivo.close()
     print(module)
+
+    llvm.shutdown()
 
 def genCode():
     global vetTabela

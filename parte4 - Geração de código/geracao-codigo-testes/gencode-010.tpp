@@ -16,6 +16,8 @@ fim
 
 inteiro principal()
     leia(n)
-    escreva(fatorial(n))
+    inteiro: fato
+    fato := fatorial(n)
+    escreva(fato)
     retorna(0)
 fim
